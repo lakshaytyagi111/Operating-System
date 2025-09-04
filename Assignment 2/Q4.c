@@ -1,7 +1,7 @@
 // Write a program to simulate the Producer-Consumer problem using semaphores and a
 // bounded buffer. Ensure synchronization between producer and consumer threads
 
-#include <stdio.h>
+#include <bits/stdc++.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -18,13 +18,42 @@ sem_t full;
 
 pthread_mutex_t mutex;
 
+void *producer(void* arg){
+    int item;
+    for (int i = 0; i < total_goods; i++){
 
-void *consumer(void* arg){
+        item = rand() % 100;
+        printf("Producer Produced: %d\n", item);
 
+        sem_wait(&empty);
+        pthread_mutex_lock(&mutex);
+                
+        buffer[in] = item;
+        in = (in +1) % buffer_size;
+
+        sem_post(&full);
+        pthread_mutex_unlock(&mutex);
+
+    }
+    return NULL;
 }
 
-void *producer(void* arg){
+void *consumer(void* arg){
+    int item;
+    for (int i = 0; i < total_goods; i++){
+        sem_wait(&full);
+        pthread_mutex_lock(&mutex);
+                
+        item = buffer[out];
+        out = (out +1) % buffer_size;
+        
+        sem_post(&empty);
+        pthread_mutex_unlock(&mutex);
 
+        printf("Consumer consumed: %d\n", item);
+
+    }
+    return NULL;
 }
 
 int main(){
@@ -34,15 +63,15 @@ int main(){
     sem_init(&full, 0, 0);
     pthread_mutex_init(&mutex, NULL);
 
-    pthread_create(&cons, NULL, consumer, total_goods);
-    pthread_create(&prod, NULL, producer, total_goods);
+    pthread_create(&cons, NULL, consumer, NULL);
+    pthread_create(&prod, NULL, producer, NULL);
 
     pthread_join(cons, NULL);
     pthread_join(prod, NULL);
 
     sem_destroy(&empty);
     sem_destroy(&full);
-    pthread_mutex_destroy(&mutex, NULL);
+    pthread_mutex_destroy(&mutex);
 
     return 0;
 }
